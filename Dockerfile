@@ -1,15 +1,15 @@
 # Stage 1: Build frontend
 FROM node:20.11.0-bullseye-slim AS frontend-builder
-WORKDIR /app
+WORKDIR /build
 
 # Install dependencies
 COPY frontend/package*.json frontend/
-WORKDIR /app/frontend
-RUN npm install --no-audit --no-fund
+WORKDIR /build/frontend
+RUN npm install || exit 1
 
 # Build frontend
-COPY frontend .
-RUN npm run build
+COPY frontend ./ 
+RUN npm run build || exit 1
 
 # Stage 2: Build backend
 FROM python:3.11.7-slim-bullseye AS backend
@@ -25,16 +25,16 @@ RUN apt-get update && \
     && apt-get clean
 
 # Install Python dependencies
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt || exit 1
 
 # Copy application code and ML artifacts
-COPY backend/app ./app
-COPY backend/data ./data
-COPY backend/model ./model
+COPY backend/app ./app/
+COPY backend/data ./data/
+COPY backend/model ./model/
 
 # Copy frontend static files
-COPY --from=frontend-builder /app/frontend/out ./static
+COPY --from=frontend-builder /build/frontend/out ./static/
 
 # Set environment variables
 ENV PYTHONPATH=/app \
