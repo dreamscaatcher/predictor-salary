@@ -1,9 +1,10 @@
 # Build frontend
 FROM node:18-alpine AS frontend-builder
 # Set working directory
-WORKDIR /app/frontend
+WORKDIR /app
 # Copy package files first
-COPY frontend/package.json frontend/package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+WORKDIR /app/frontend
 # Install dependencies with specific flags to avoid peer dependency issues
 RUN npm install --legacy-peer-deps --force
 # Copy the frontend source code
