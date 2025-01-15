@@ -1,12 +1,13 @@
 # Build frontend
 FROM node:18-alpine AS frontend-builder
-# Set working directory
-WORKDIR /app
-# Copy the entire frontend directory
-COPY frontend/ ./frontend/
-# Change to frontend directory and install dependencies
+# Create and set frontend directory
 WORKDIR /app/frontend
+# Copy only package files first
+COPY ./frontend/package*.json ./
+# Install dependencies
 RUN npm install --legacy-peer-deps --force
+# Copy the rest of the frontend files
+COPY ./frontend/ ./
 # Set environment variables for production build
 ENV NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NODE_ENV=production
