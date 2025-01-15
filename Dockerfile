@@ -1,39 +1,42 @@
-# Build frontend
-FROM node:18-alpine AS frontend-builder
-# Create and set frontend directory
+# Stage 1: Build frontend
+FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
-# Copy only package files first
-COPY ./frontend/package*.json ./
-# Install dependencies
-RUN npm install --legacy-peer-deps --force
-# Copy the rest of the frontend files
-COPY ./frontend/ ./
-# Set environment variables for production build
-ENV NEXT_PUBLIC_API_URL=http://localhost:8000
-ENV NODE_ENV=production
-# Build the frontend
+
+# Copy frontend files
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend/ ./
 RUN npm run build
 
-# Build backend
-FROM python:3.12-slim
-# Set working directory
+# Stage 2: Build backend
+FROM python:3.11-slim AS backend
+
 WORKDIR /app
+
 # Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
-# Copy backend requirements
+
+# Copy backend requirements and install dependencies
 COPY backend/requirements.txt .
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-# Copy backend code
-COPY backend/ .
-# Copy built frontend from previous stage
+
+# Copy backend code and ML artifacts
+COPY backend/app ./app
+COPY backend/data ./data
+COPY backend/model ./model
+
+# Copy frontend static files from builder
 COPY --from=frontend-builder /app/frontend/out ./static
+
 # Set environment variables
+ENV PYTHONPATH=/app
 ENV PORT=8000
-# Expose port
+
+# Expose the port
 EXPOSE 8000
-# Start the application
+
+# Start the FastAPI server
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
