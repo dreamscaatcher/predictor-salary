@@ -1,13 +1,46 @@
+# Version control
 .git
 .gitignore
+.gitattributes
+
+# Environment files
 .env
-*/node_modules
-*/venv
-*/__pycache__
+.env.*
+!.env.example
+
+# Dependencies
+**/node_modules
+**/venv
+**/__pycache__
 *.pyc
-*/.next
-*/out
+
+# Build outputs
+**/build
+**/dist
+**/.next
+**/out
 frontend/.next
+frontend/build
 frontend/node_modules
+
+# Python specific
 backend/venv
 backend/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE specific
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
