@@ -7,18 +7,14 @@ WORKDIR /app/frontend
 # Copy package files first
 COPY frontend/package.json frontend/package-lock.json ./
 
-# Install dependencies with specific flags to avoid peer dependency issues
+# Install dependencies
 RUN npm install --legacy-peer-deps --force
 
 # Copy the frontend source code
 COPY frontend/ .
 
-# Set environment variables for production build
-ENV NEXT_PUBLIC_API_URL=/api
-ENV NODE_ENV=production
-
 # Build the frontend
-RUN npm run build
+RUN npm run build && npm run export
 
 # Build backend
 FROM python:3.12-slim
@@ -32,24 +28,15 @@ RUN apt-get update && \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend requirements
+# Copy backend requirements and install
 COPY backend/requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code
 COPY backend/ .
 
-# Create static directory
-RUN mkdir -p static
-
-# Copy built frontend from previous stage
-COPY --from=frontend-builder /app/frontend/out /app/static
-
-# Set environment variables
-ENV PORT=8000
-ENV STATIC_DIR=/app/static
+# Copy built frontend from previous stage to static directory
+COPY --from=frontend-builder /app/frontend/out static/
 
 # Expose port
 EXPOSE 8000

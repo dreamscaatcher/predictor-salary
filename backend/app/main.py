@@ -16,6 +16,22 @@ import traceback
 
 # Initialize FastAPI
 app = FastAPI(title="Salary Prediction API")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Updated CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # Must be False when allow_origins=["*"]
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept", "Authorization"],
+    expose_headers=["*"],
+)
+
+# Add this new route
+@app.get("/{full_path:path}")
+async def serve_static(full_path: str):
+    return FileResponse(f"static/{full_path}")
 
 # Updated CORS middleware
 app.add_middleware(
