@@ -150,11 +150,41 @@ async def root():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "model_loaded": model is not None,
-        "data_path_exists": DATA_PATH.exists()
-    }
+    try:
+        if model is None:
+            raise Exception("Model not loaded")
+        if not DATA_PATH.exists():
+            raise Exception("Data file not found")
+        if not all(Path(MODEL_DIR / f).exists() for f in ['lin_regress.sav', 'exp_encoder.sav', 'size_encoder.sav']):
+            raise Exception("Model files missing")
+            
+        # Test model loading
+        test_input = pd.DataFrame([{
+            'experience_level': 'SE',
+            'company_size': 'L',
+            'employment_type': 'FT',
+            'job_title': 'Data Scientist'
+        }])
+        test_input['experience_level_encoded'] = exp_encoder.transform(test_input[['experience_level']])
+        test_input['company_size_encoded'] = size_encoder.transform(test_input[['company_size']])
+        test_input = pd.get_dummies(test_input, columns=['employment_type', 'job_title'], drop_first=True)
+        feature_columns = model.feature_names_in_
+        for col in feature_columns:
+            if col not in test_input.columns:
+                test_input[col] = 0
+        test_input = test_input[feature_columns]
+        _ = model.predict(test_input)
+        
+        return {
+            "status": "healthy",
+            "model_loaded": True,
+            "data_path_exists": True,
+            "model_files_exist": True
+        }
+    except Exception as e:
+        print(f"Health check failed: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=503, detail=str(e))
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(features: PredictionFeatures):
