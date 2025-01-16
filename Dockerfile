@@ -1,21 +1,3 @@
-# Build frontend
-FROM node:18-alpine AS frontend-builder
-
-# Set working directory
-WORKDIR /app/frontend
-
-# Copy package files first
-COPY frontend/package.json frontend/package-lock.json ./
-
-# Install dependencies
-RUN npm install --legacy-peer-deps
-
-# Copy the frontend source code
-COPY frontend/ .
-
-# Build the frontend
-RUN npm run build
-
 # Build backend
 FROM python:3.12-slim
 
@@ -26,8 +8,6 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend requirements and install
@@ -49,19 +29,8 @@ RUN python -c "from app.main import load_or_train_model; load_or_train_model()" 
         echo "Model files not created successfully" && exit 1; \
     fi
 
-# Copy built frontend from previous stage
-COPY --from=frontend-builder /app/frontend/.next ./.next
-COPY --from=frontend-builder /app/frontend/node_modules ./node_modules
-COPY --from=frontend-builder /app/frontend/package.json ./package.json
+# Expose port
+EXPOSE 8000
 
-# Expose ports
-EXPOSE 3000 8000
-
-# Create a script to start both services
-RUN echo '#!/bin/bash\n\
-npm start & \
-uvicorn app.main:app --host 0.0.0.0 --port 8000\n\
-wait' > start.sh && chmod +x start.sh
-
-# Start both services
-CMD ["./start.sh"]
+# Start the backend
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
