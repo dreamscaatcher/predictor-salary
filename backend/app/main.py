@@ -33,15 +33,6 @@ app.add_middleware(
 async def serve_static(full_path: str):
     return FileResponse(f"static/{full_path}")
 
-# Updated CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_credentials=False,  # Must be False when allow_origins=["*"]
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Define paths
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / 'data' / 'ds_salaries.csv'
