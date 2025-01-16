@@ -12,12 +12,6 @@
 **/env
 **/venv
 
-# Build outputs
-**/build
-**/dist
-**/out
-**/.next
-
 # Development files
 **/.env
 **/.env.local
