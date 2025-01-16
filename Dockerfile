@@ -1,83 +1,58 @@
-# Stage 1: Build frontend
-FROM node:20.11.0-bullseye-slim AS frontend-builder
+# Build frontend
+FROM node:18-alpine AS frontend-builder
 
 # Set working directory
-WORKDIR /app
+WORKDIR /app/frontend
 
-# Copy package files first for better caching
-COPY frontend/package*.json ./
+# Copy package files first
+COPY frontend/package.json frontend/package-lock.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with specific flags to avoid peer dependency issues
+RUN npm install --legacy-peer-deps --force
 
-# Copy the rest of the frontend code
-COPY frontend/ ./
+# Copy the frontend source code
+COPY frontend/ .
 
-# Build the application
+# Set environment variables for production build
+ENV NEXT_PUBLIC_API_URL=/api
+ENV NODE_ENV=production
+
+# Build the frontend
 RUN npm run build
 
-# Stage 2: Final image
-FROM python:3.11.7-slim-bullseye
+# Build backend
+FROM python:3.12-slim
 
+# Set working directory
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
-    curl \
-    nginx \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy nginx configuration
-RUN echo 'server {\n\
-    listen $PORT;\n\
-    root /app/static;\n\
-    location / {\n\
-        try_files $uri $uri/ /index.html;\n\
-    }\n\
-    location /api/ {\n\
-        proxy_pass http://localhost:8000/;\n\
-        proxy_set_header Host $host;\n\
-        proxy_set_header X-Real-IP $remote_addr;\n\
-    }\n\
-    location = /health {\n\
-        proxy_pass http://localhost:8000/health;\n\
-        proxy_set_header Host $host;\n\
-        proxy_set_header X-Real-IP $remote_addr;\n\
-    }\n\
-}' > /etc/nginx/conf.d/default.conf
+# Copy backend requirements
+COPY backend/requirements.txt .
 
 # Install Python dependencies
-COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code and ML artifacts
-COPY backend/app ./app/
-COPY backend/data ./data/
-COPY backend/model ./model/
+# Copy backend code
+COPY backend/ .
 
-# Copy frontend build
-COPY --from=frontend-builder /app/out /app/static
+# Create static directory
+RUN mkdir -p static
+
+# Copy built frontend from previous stage
+COPY --from=frontend-builder /app/frontend/out /app/static
 
 # Set environment variables
-ENV PYTHONPATH=/app \
-    PYTHONUNBUFFERED=1
-
-# Create start script
-RUN echo '#!/bin/bash\n\
-sed -i "s/\$PORT/$PORT/g" /etc/nginx/conf.d/default.conf\n\
-nginx\n\
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4' > /app/start.sh && \
-chmod +x /app/start.sh
-
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+ENV PORT=8000
+ENV STATIC_DIR=/app/static
 
 # Expose port
-EXPOSE $PORT
+EXPOSE 8000
 
-# Start both nginx and backend server
-CMD ["/app/start.sh"]
+# Start the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
