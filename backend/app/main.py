@@ -17,11 +17,16 @@ app = FastAPI(title="Salary Prediction API")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins in development
-    allow_credentials=False,  # Must be False when allow_origins=["*"]
+    allow_origins=[
+        "http://localhost:3000",  # Local development
+        "https://salary-predictor-production.up.railway.app",  # Production URL
+        "https://salary-predictor-production.railway.app"  # Alternative Production URL
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Define paths
 BASE_DIR = Path(__file__).resolve().parent.parent
