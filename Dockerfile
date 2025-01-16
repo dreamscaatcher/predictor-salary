@@ -3,12 +3,11 @@ FROM node:20.11.0-bullseye-slim AS frontend-builder
 WORKDIR /build
 
 # Install dependencies
-COPY frontend/package*.json frontend/
-WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 
 # Build frontend
-COPY frontend ./ 
+COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Final image
@@ -37,6 +36,11 @@ RUN echo 'server {\n\
         proxy_set_header Host $host;\n\
         proxy_set_header X-Real-IP $remote_addr;\n\
     }\n\
+    location = /health {\n\
+        proxy_pass http://localhost:8000/health;\n\
+        proxy_set_header Host $host;\n\
+        proxy_set_header X-Real-IP $remote_addr;\n\
+    }\n\
 }' > /etc/nginx/conf.d/default.conf
 
 # Install Python dependencies
@@ -49,7 +53,7 @@ COPY backend/data ./data/
 COPY backend/model ./model/
 
 # Copy frontend build
-COPY --from=frontend-builder /build/frontend/out /app/static
+COPY --from=frontend-builder /build/out /app/static
 
 # Set environment variables
 ENV PYTHONPATH=/app \
@@ -61,6 +65,10 @@ sed -i "s/\$PORT/$PORT/g" /etc/nginx/conf.d/default.conf\n\
 nginx\n\
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4' > /app/start.sh && \
 chmod +x /app/start.sh
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
 # Expose port
 EXPOSE $PORT
