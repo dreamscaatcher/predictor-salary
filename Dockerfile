@@ -34,8 +34,20 @@ RUN apt-get update && \
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code and model files
+# Copy data directory first
+COPY backend/data ./data
+
+# Copy model directory
+COPY backend/model ./model
+
+# Copy remaining backend code
 COPY backend/ .
+
+# Train the model and verify it exists
+RUN python -c "from app.main import load_or_train_model; load_or_train_model()" && \
+    if [ ! -f "model/lin_regress.sav" ] || [ ! -f "model/exp_encoder.sav" ] || [ ! -f "model/size_encoder.sav" ]; then \
+        echo "Model files not created successfully" && exit 1; \
+    fi
 
 # Copy built frontend from previous stage
 COPY --from=frontend-builder /app/frontend/.next ./.next
