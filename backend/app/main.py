@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 import pandas as pd
@@ -147,9 +147,14 @@ async def root():
         "status": "active"
     }
 
+@app.head("/health")
+async def health_head():
+    """Simple health check endpoint for HEAD requests"""
+    return Response(status_code=200)
+
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Detailed health check endpoint for GET requests"""
     try:
         if model is None:
             raise Exception("Model not loaded")
