@@ -3,7 +3,7 @@ name = "backend"
 dockerfile = "Dockerfile"
 internal_port = 8000
 healthcheckPath = "/health"
-healthcheckTimeout = 100
+healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 

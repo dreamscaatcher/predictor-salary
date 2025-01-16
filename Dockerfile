@@ -35,16 +35,5 @@ RUN python -c "from app.main import load_or_train_model; load_or_train_model()" 
 # Expose port
 EXPOSE 8000
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-echo "Starting FastAPI application..."\n\
-until $(curl --output /dev/null --silent --head --fail http://localhost:8000/health); do\n\
-    echo "Waiting for FastAPI to start..."\n\
-    sleep 1\n\
-done\n\
-echo "FastAPI is up and running"\n\
-tail -f /dev/null' > /app/start.sh && \
-    chmod +x /app/start.sh
-
-# Start the backend with health check
-CMD uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level debug & /app/start.sh
+# Start the backend
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]
