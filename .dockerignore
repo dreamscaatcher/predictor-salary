@@ -1,6 +1,7 @@
-# Version control
-.git
-.gitignore
+# Version control (but allow frontend files)
+/.git
+/.gitignore
+/frontend/.git
 
 # Dependencies
 **/node_modules
