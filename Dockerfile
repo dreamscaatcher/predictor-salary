@@ -1,13 +1,19 @@
 # Stage 1: Build frontend
 FROM node:20.11.0-bullseye-slim AS frontend-builder
-WORKDIR /build
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY frontend/package*.json ./
 
 # Install dependencies
-COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 
-# Build frontend
+# Copy the rest of the frontend code
 COPY frontend/ ./
+
+# Build the application
 RUN npm run build
 
 # Stage 2: Final image
@@ -53,7 +59,7 @@ COPY backend/data ./data/
 COPY backend/model ./model/
 
 # Copy frontend build
-COPY --from=frontend-builder /build/out /app/static
+COPY --from=frontend-builder /app/out /app/static
 
 # Set environment variables
 ENV PYTHONPATH=/app \
