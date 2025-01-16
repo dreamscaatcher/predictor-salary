@@ -1,15 +1,24 @@
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
-
-[deploy]
-numReplicas = 1
+[[services]]
+name = "backend"
+dockerfile = "Dockerfile"
+internal_port = 8000
 healthcheckPath = "/health"
-healthcheckTimeout = 600
+healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
-[env]
-BACKEND_PORT = "8000"
-FRONTEND_PORT = "3000"
+[services.env]
+PYTHON_VERSION = "3.12"
+PORT = "8000"
+
+[[services]]
+name = "frontend"
+dockerfile = "frontend/Dockerfile"
+internal_port = 3000
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[services.env]
 NODE_ENV = "production"
+PORT = "3000"
+NEXT_PUBLIC_API_URL = "${RAILWAY_SERVICE_BACKEND_URL}"
